@@ -877,5 +877,55 @@
     if (state.dirty && state.items.length) { e.preventDefault(); e.returnValue = ''; }
   });
 
+  /* ------------------------------------------------------------------ */
+  /* التثبيت كتطبيق                                                      */
+  /* ------------------------------------------------------------------ */
+  const btnInstall = $('btnInstall');
+  const iosModal = $('iosModal');
+  const installed = () =>
+    matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let installPrompt = null;
+
+  if (!installed()) {
+    if (isIOS) {
+      btnInstall.hidden = false;
+      // Chrome/Edge/Firefox على iOS تُظهر الخيار في الإصدارات الحديثة فقط
+      $('iosNote').hidden = !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);
+    }
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      installPrompt = e;
+      btnInstall.hidden = false;
+    });
+  }
+  window.addEventListener('appinstalled', () => {
+    btnInstall.hidden = true;
+    installPrompt = null;
+    toast('تم تثبيت التطبيق ✓');
+  });
+
+  btnInstall.onclick = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      installPrompt = null;
+      if (outcome === 'accepted') btnInstall.hidden = true;
+    } else if (isIOS) {
+      iosModal.hidden = false;
+      $('iosOk').focus();
+    }
+  };
+  $('iosOk').onclick = $('iosClose').onclick = () => (iosModal.hidden = true);
+  iosModal.addEventListener('click', (e) => { if (e.target === iosModal) iosModal.hidden = true; });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !iosModal.hidden) iosModal.hidden = true;
+  });
+
+  if ('serviceWorker' in navigator && window.isSecureContext && !window.claude) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
   updateButtons();
 })();

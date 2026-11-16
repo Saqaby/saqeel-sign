@@ -4,8 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>توقيع المستندات – سلمان الصقعبي</title>
-<link rel="stylesheet" href="lib/fonts/tajawal.css?v=3">
-<link rel="stylesheet" href="style.css?v=3">
+<meta name="theme-color" content="#0E3355">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="توقيع المستندات">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="lib/fonts/tajawal.css?v=4">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="mark" viewBox="0 0 542 537"><g transform="translate(271.0,268.5)"><g transform="translate(4,17)"><rect x="-72" y="-78" width="40" height="96" rx="20" fill="#9AA7B4"/><rect x="32" y="-136" width="40" height="154" rx="20" fill="#4E96C8"/><rect x="136" y="-202" width="40" height="220" rx="20" fill="#2B7FC0"/><path d="M110,-230 L156,-286 L202,-230 Z" fill="#2B7FC0"/><rect x="-146" y="0" width="396" height="26" rx="13" fill="#0E3355"/><rect x="-128" y="26" width="360" height="40" rx="8" fill="#E4EBF1"/><rect x="-104" y="36" width="312" height="5" rx="2.5" fill="#C3CCD5"/><rect x="-104" y="49" width="312" height="5" rx="2.5" fill="#C3CCD5"/><path d="M250,78 H-184 a74,74 0 0 0 -74,74 v10 a74,74 0 0 0 74,74 h186" stroke="#0E3355" stroke-width="34" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></symbol><symbol id="markNeg" viewBox="0 0 542 537"><g transform="translate(271.0,268.5)"><g transform="translate(4,17)"><rect x="-72" y="-78" width="40" height="96" rx="20" fill="#8FA6BC"/><rect x="32" y="-136" width="40" height="154" rx="20" fill="#79B8E4"/><rect x="136" y="-202" width="40" height="220" rx="20" fill="#FFFFFF"/><path d="M110,-230 L156,-286 L202,-230 Z" fill="#FFFFFF"/><rect x="-146" y="0" width="396" height="26" rx="13" fill="#FFFFFF"/><rect x="-128" y="26" width="360" height="40" rx="8" fill="#FFFFFF"/><rect x="-104" y="36" width="312" height="5" rx="2.5" fill="#0E3355"/><rect x="-104" y="49" width="312" height="5" rx="2.5" fill="#0E3355"/><path d="M250,78 H-184 a74,74 0 0 0 -74,74 v10 a74,74 0 0 0 74,74 h186" stroke="#FFFFFF" stroke-width="34" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></symbol><symbol id="li" viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.59 0 4.26 2.37 4.26 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z" fill="currentColor"/></symbol></svg>
@@ -18,6 +26,9 @@
       <a class="by" href="https://www.linkedin.com/in/%D8%B3%D9%84%D9%85%D8%A7%D9%86-%D8%A7%D9%84%D8%B5%D9%82%D8%B9%D8%A8%D9%8A-78a098159/" target="_blank" rel="noopener">سلمان الصقعبي<svg width="14" height="14" viewBox="0 0 24 24" aria-label="لينكدإن"><use href="#li"/></svg></a>
     </div>
   </div>
+
+  <button id="btnInstall" class="btn install" hidden title="ثبّت الموقع على جهازك كتطبيق">
+    <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7m0 0-3-3m3 3 3-3M10 18.5h4"/></svg>تثبيت التطبيق</button>
 
   <div class="actions">
     <button id="btnUpload" class="btn primary" title="رفع ملف PDF">
@@ -102,6 +113,28 @@
   </div>
 </div>
 
+<!-- خطوات التثبيت على الآيفون -->
+<div id="iosModal" class="modal" hidden>
+  <div class="modal-card small" role="dialog" aria-labelledby="iosTitle">
+    <div class="modal-head">
+      <h3 id="iosTitle">ثبّت التطبيق على الآيفون</h3>
+      <button class="icon" id="iosClose" title="إغلاق">×</button>
+    </div>
+    <ol class="ios-steps">
+      <li>اضغط زر <b>المشاركة</b>
+        <svg viewBox="0 0 24 24" aria-label="المشاركة"><path d="M12 15V3m0 0L8 7m4-4 4 4M7 11H5v10h14V11h-2"/></svg>
+        في شريط Safari</li>
+      <li>اختر <b>«إضافة إلى الشاشة الرئيسية»</b>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg></li>
+      <li>اضغط <b>«إضافة»</b> في الأعلى</li>
+    </ol>
+    <p class="ios-note" id="iosNote">إن لم تجد الخيار، افتح الموقع في <b>Safari</b> ثم كرّر الخطوات.</p>
+    <div class="modal-foot">
+      <button class="btn primary" id="iosOk">تم</button>
+    </div>
+  </div>
+</div>
+
 <!-- نافذة التأكيد -->
 <div id="askModal" class="modal" hidden>
   <div class="modal-card small" role="alertdialog" aria-labelledby="askText">
@@ -116,6 +149,6 @@
 <script src="lib/pdf.min.js"></script>
 <script src="lib/pdf.worker.min.js"></script>
 <script src="lib/pdf-lib.min.js"></script>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

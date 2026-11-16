@@ -189,3 +189,12 @@ button:disabled{cursor:not-allowed;opacity:.45}
   .sig-line{left:20px;right:20px;bottom:55px}
   .sig-hint{bottom:30px}
 }
+
+/* زر تثبيت التطبيق وخطوات الآيفون */
+.btn.install{border-color:var(--navy-2);color:var(--navy-2);background:transparent}
+.btn.install:not(:disabled):hover{background:var(--hover)}
+.ios-steps{margin:0;padding:18px 40px 6px 22px;line-height:1.8;font-size:15px}
+.ios-steps li{margin-bottom:10px}
+.ios-steps svg{width:20px;height:20px;vertical-align:-4px;margin-inline:4px;fill:none;stroke:var(--navy-2);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ios-note{margin:0 18px 4px;padding:10px 12px;border-radius:10px;background:var(--panel-2);color:var(--muted);font-size:13px;line-height:1.7}
+@media (max-width:640px){ .btn.install{flex-direction:row;padding:6px 10px;font-size:12px} }
