@@ -12,8 +12,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="توقيع المستندات">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="lib/fonts/tajawal.css?v=4">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="lib/fonts/tajawal.css?v=5">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="mark" viewBox="0 0 542 537"><g transform="translate(271.0,268.5)"><g transform="translate(4,17)"><rect x="-72" y="-78" width="40" height="96" rx="20" fill="#9AA7B4"/><rect x="32" y="-136" width="40" height="154" rx="20" fill="#4E96C8"/><rect x="136" y="-202" width="40" height="220" rx="20" fill="#2B7FC0"/><path d="M110,-230 L156,-286 L202,-230 Z" fill="#2B7FC0"/><rect x="-146" y="0" width="396" height="26" rx="13" fill="#0E3355"/><rect x="-128" y="26" width="360" height="40" rx="8" fill="#E4EBF1"/><rect x="-104" y="36" width="312" height="5" rx="2.5" fill="#C3CCD5"/><rect x="-104" y="49" width="312" height="5" rx="2.5" fill="#C3CCD5"/><path d="M250,78 H-184 a74,74 0 0 0 -74,74 v10 a74,74 0 0 0 74,74 h186" stroke="#0E3355" stroke-width="34" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></symbol><symbol id="markNeg" viewBox="0 0 542 537"><g transform="translate(271.0,268.5)"><g transform="translate(4,17)"><rect x="-72" y="-78" width="40" height="96" rx="20" fill="#8FA6BC"/><rect x="32" y="-136" width="40" height="154" rx="20" fill="#79B8E4"/><rect x="136" y="-202" width="40" height="220" rx="20" fill="#FFFFFF"/><path d="M110,-230 L156,-286 L202,-230 Z" fill="#FFFFFF"/><rect x="-146" y="0" width="396" height="26" rx="13" fill="#FFFFFF"/><rect x="-128" y="26" width="360" height="40" rx="8" fill="#FFFFFF"/><rect x="-104" y="36" width="312" height="5" rx="2.5" fill="#0E3355"/><rect x="-104" y="49" width="312" height="5" rx="2.5" fill="#0E3355"/><path d="M250,78 H-184 a74,74 0 0 0 -74,74 v10 a74,74 0 0 0 74,74 h186" stroke="#FFFFFF" stroke-width="34" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></symbol><symbol id="li" viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.59 0 4.26 2.37 4.26 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z" fill="currentColor"/></symbol></svg>
@@ -113,6 +113,38 @@
   </div>
 </div>
 
+<!-- المحفوظات على الجهاز -->
+<div id="libModal" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-labelledby="libTitle">
+    <div class="modal-head">
+      <h3 id="libTitle"></h3>
+      <button class="icon" id="libClose" title="إغلاق">×</button>
+    </div>
+    <div class="lib-list" id="libList"></div>
+    <p class="lib-note">محفوظة في هذا المتصفح على جهازك فقط، ولا تُرسل إلى أي مكان.</p>
+    <div class="modal-foot">
+      <button class="btn primary" id="libNew"></button>
+    </div>
+  </div>
+</div>
+
+<div id="saveModal" class="modal" hidden>
+  <div class="modal-card small" role="dialog" aria-labelledby="saveTitle">
+    <div class="modal-head"><h3 id="saveTitle"></h3></div>
+    <div class="save-body">
+      <img id="saveImg" class="save-img" alt="">
+      <label class="save-label">الاسم
+        <input id="saveName" type="text" maxlength="40" autocomplete="off">
+      </label>
+      <p class="lib-note">يُحفظ في هذا المتصفح على جهازك فقط، وتختاره لاحقًا من القائمة دون رسم أو رفع. يمكنك حذفه في أي وقت.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="saveNo">لا، لهذا المستند فقط</button>
+      <button class="btn primary" id="saveYes">حفظ</button>
+    </div>
+  </div>
+</div>
+
 <!-- خطوات التثبيت على الآيفون -->
 <div id="iosModal" class="modal" hidden>
   <div class="modal-card small" role="dialog" aria-labelledby="iosTitle">
@@ -149,6 +181,6 @@
 <script src="lib/pdf.min.js"></script>
 <script src="lib/pdf.worker.min.js"></script>
 <script src="lib/pdf-lib.min.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

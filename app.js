@@ -130,8 +130,12 @@
       busy(false);
       fileInput.value = '';
     }
-    // بعد فتح المستند: عرض خيار رفع الختم مباشرة
-    if (opened && await ask('تم فتح المستند. هل تريد رفع صورة الختم الآن؟', 'رفع الختم', 'لاحقًا')) {
+    // بعد فتح المستند: عرض خيار الختم مباشرة (من المحفوظ إن وُجد)
+    if (!opened) return;
+    const stamps = await library.list('stamp');
+    if (stamps.length) {
+      if (await ask('تم فتح المستند. هل تريد إضافة الختم الآن؟', 'اختيار الختم', 'لاحقًا')) openPicker('stamp', stamps);
+    } else if (await ask('تم فتح المستند. هل تريد رفع صورة الختم الآن؟', 'رفع الختم', 'لاحقًا')) {
       addStamp();
     }
   }
@@ -483,9 +487,122 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* المحفوظات: تواقيع وأختام يختار المستخدم حفظها على جهازه فقط          */
+  /* ------------------------------------------------------------------ */
+  const library = (() => {
+    let dbp = null;
+    const open = () => dbp || (dbp = new Promise((res, rej) => {
+      const r = indexedDB.open('saqeel-sign', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('library', { keyPath: 'id' });
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => { dbp = null; rej(r.error); };
+    }));
+    const run = async (mode, fn) => {
+      const db = await open();
+      return new Promise((res, rej) => {
+        const t = db.transaction('library', mode);
+        const req = fn(t.objectStore('library'));
+        t.oncomplete = () => res(req.result);
+        t.onerror = () => rej(t.error);
+      });
+    };
+    return {
+      available: 'indexedDB' in window,
+      async list(kind) {
+        try {
+          const all = await run('readonly', (s) => s.getAll());
+          return all.filter((i) => i.kind === kind).sort((a, b) => a.created - b.created);
+        } catch { return []; }
+      },
+      put: (item) => run('readwrite', (s) => s.put(item)),
+      remove: (id) => run('readwrite', (s) => s.delete(id)),
+    };
+  })();
+
+  const KIND = {
+    sig: { one: 'التوقيع', saved: 'تواقيعي المحفوظة', fresh: 'رسم توقيع جديد', name: 'توقيعي' },
+    stamp: { one: 'الختم', saved: 'الأختام المحفوظة', fresh: 'رفع ختم جديد', name: 'ختم الجمعية' },
+  };
+  const startNew = (kind) => (kind === 'sig' ? openSignaturePad() : addStamp());
+
+  // يعرض المحفوظات إن وُجدت، وإلا يبدأ بإنشاء جديد مباشرة
+  async function chooseOrNew(kind) {
+    const items = await library.list(kind);
+    if (!items.length) return startNew(kind);
+    openPicker(kind, items);
+  }
+
+  const libModal = $('libModal');
+  function openPicker(kind, items) {
+    $('libTitle').textContent = KIND[kind].saved;
+    $('libNew').textContent = KIND[kind].fresh;
+    $('libNew').onclick = () => { libModal.hidden = true; startNew(kind); };
+    const list = $('libList');
+    list.replaceChildren();
+    for (const it of items) {
+      const card = document.createElement('div');
+      card.className = 'lib-card';
+      const pick = document.createElement('button');
+      pick.className = 'lib-pick';
+      pick.title = 'إضافة إلى المستند';
+      const img = document.createElement('img');
+      img.src = it.src; img.alt = '';
+      const label = document.createElement('span');
+      label.textContent = it.name;
+      pick.append(img, label);
+      pick.onclick = () => {
+        libModal.hidden = true;
+        addItem(kind, it.src, it.ratio, it.width);
+      };
+      const del = document.createElement('button');
+      del.className = 'lib-del';
+      del.title = 'حذف من الجهاز';
+      del.textContent = '×';
+      del.onclick = async () => {
+        if (!(await ask(`حذف «${it.name}» من هذا الجهاز؟`, 'حذف'))) return;
+        await library.remove(it.id);
+        card.remove();
+        if (!list.children.length) { libModal.hidden = true; toast('لم يبقَ شيء محفوظ'); }
+      };
+      card.append(pick, del);
+      list.append(card);
+    }
+    libModal.hidden = false;
+  }
+  $('libClose').onclick = () => (libModal.hidden = true);
+
+  // بعد إنشاء توقيع أو ختم جديد: عرض خيار حفظه
+  const saveModal = $('saveModal');
+  function offerSave(kind, src, ratio, width) {
+    if (!library.available) return;
+    $('saveTitle').textContent = `حفظ ${KIND[kind].one} على هذا الجهاز؟`;
+    $('saveImg').src = src;
+    const name = $('saveName');
+    name.value = KIND[kind].name;
+    saveModal.hidden = false;
+    name.focus();
+    name.select();
+    const close = () => { saveModal.hidden = true; $('saveYes').onclick = $('saveNo').onclick = null; };
+    $('saveNo').onclick = close;
+    $('saveYes').onclick = async () => {
+      const item = {
+        id: `${kind}-${Date.now()}`, kind, src, ratio, width,
+        name: name.value.trim() || KIND[kind].name, created: Date.now(),
+      };
+      close();
+      try {
+        await library.put(item);
+        toast(`تم الحفظ ✓ ستجده عند الضغط على «${kind === 'sig' ? 'إضافة توقيع' : 'إضافة الختم'}»`);
+      } catch {
+        toast('تعذّر الحفظ في هذا المتصفح', true);
+      }
+    };
+  }
+  $('saveName').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('saveYes').click(); });
+
+  /* ------------------------------------------------------------------ */
   /* الختم                                                               */
   /* ------------------------------------------------------------------ */
-  // لا يُحفظ الختم في الموقع: يُرفع في كل مرة ويبقى في الذاكرة للمستند الحالي فقط
   const stampInput = document.createElement('input');
   stampInput.type = 'file';
   stampInput.accept = 'image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp';
@@ -505,15 +622,17 @@
       return toast('الرجاء اختيار صورة الختم بصيغة PNG أو JPG', true);
     }
     busy(true, 'جارٍ تجهيز الختم…');
+    let stamp = null;
     try {
-      const { src, ratio } = await prepareStamp(file);
-      addItem('stamp', src, ratio, 115);
+      stamp = await prepareStamp(file);
+      addItem('stamp', stamp.src, stamp.ratio, 115);
     } catch (e) {
       console.error(e);
       toast('تعذّر قراءة صورة الختم. جرّب صورة أخرى بصيغة PNG أو JPG.', true);
     } finally {
       busy(false);
     }
+    if (stamp) offerSave('stamp', stamp.src, stamp.ratio, 115);
   };
 
   function loadImage(file) {
@@ -685,7 +804,9 @@
     // العرض الافتراضي متناسب مع حجم الرسم داخل اللوحة
     const cssW = w / SIG_RES;
     closeSignaturePad(true);
-    addItem('sig', src, w / h, clamp(cssW * 0.4, 70, 190));
+    const width = clamp(cssW * 0.4, 70, 190);
+    addItem('sig', src, w / h, width);
+    offerSave('sig', src, w / h, width);
   }
 
   /* ------------------------------------------------------------------ */
@@ -801,8 +922,8 @@
   /* ------------------------------------------------------------------ */
   $('btnUpload').onclick = $('btnUpload2').onclick = () => fileInput.click();
   fileInput.onchange = () => openFile(fileInput.files[0]);
-  $('btnSign').onclick = openSignaturePad;
-  $('btnStamp').onclick = addStamp;
+  $('btnSign').onclick = () => chooseOrNew('sig');
+  $('btnStamp').onclick = () => chooseOrNew('stamp');
   $('btnUndo').onclick = undo;
   $('btnDelete').onclick = () => deleteItem();
   $('btnDownload').onclick = exportPdf;
@@ -853,6 +974,14 @@
   document.addEventListener('keydown', (e) => {
     if (!$('askModal').hidden) {
       if (e.key === 'Escape') $('askNo').click();
+      return;
+    }
+    if (!saveModal.hidden) {
+      if (e.key === 'Escape') $('saveNo').click();
+      return;
+    }
+    if (!libModal.hidden) {
+      if (e.key === 'Escape') libModal.hidden = true;
       return;
     }
     if (!sigModal.hidden) {
