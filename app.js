@@ -698,13 +698,39 @@
     return a;
   }
 
+  // المستند المحمي: نعيد بناءه من صفحات مرسومة بدقة عالية (≈216 نقطة/بوصة)
+  async function flattenToImages() {
+    const out = await PDFDocument.create();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const SCALE = 3;
+    for (let i = 0; i < state.pages.length; i++) {
+      busy(true, `جارٍ تجهيز المستند المحمي… (${i + 1}/${state.pages.length})`);
+      const page = await state.pdf.getPage(i + 1);
+      const vp = page.getViewport({ scale: SCALE });
+      canvas.width = Math.ceil(vp.width);
+      canvas.height = Math.ceil(vp.height);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+      const jpg = await out.embedJpg(dataUrlToBytes(canvas.toDataURL('image/jpeg', 0.92)));
+      const w = vp.width / SCALE, h = vp.height / SCALE;
+      out.addPage([w, h]).drawImage(jpg, { x: 0, y: 0, width: w, height: h });
+    }
+    canvas.width = canvas.height = 0;
+    return out;
+  }
+
   async function exportPdf() {
     if (!state.pdf) return;
     if (!state.items.length &&
         !(await ask('لم تُضف توقيعًا أو ختمًا بعد. هل تريد تنزيل المستند كما هو؟', 'تنزيل'))) return;
     busy(true, 'جارٍ إنشاء ملف PDF…');
     try {
-      const doc = await PDFDocument.load(state.bytes, { ignoreEncryption: true, updateMetadata: false });
+      let doc = await PDFDocument.load(state.bytes, { ignoreEncryption: true, updateMetadata: false });
+      const encrypted = doc.isEncrypted;
+      // pdf-lib لا يشفّر ما يضيفه، فيقرأ العارض التوقيع في ملف مشفّر بيانات تالفة
+      if (encrypted) doc = await flattenToImages();
       const pages = doc.getPages();
       const cache = new Map();
       for (const it of state.items) {
@@ -714,6 +740,10 @@
           cache.set(it.src, img);
         }
         const vp = state.pages[it.page].vp;
+        if (encrypted) {
+          pages[it.page].drawImage(img, { x: it.x, y: vp.height - it.y - it.h, width: it.w, height: it.h });
+          continue;
+        }
         // الركن السفلي الأيسر للعنصر كما يظهر ← نقطة في فضاء PDF
         const [px, py] = vp.convertToPdfPoint(it.x, it.y + it.h);
         pages[it.page].drawImage(img, {
