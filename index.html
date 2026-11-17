@@ -12,8 +12,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="توقيع المستندات">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="lib/fonts/tajawal.css?v=5">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="lib/fonts/tajawal.css?v=6">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="mark" viewBox="0 0 542 537"><g transform="translate(271.0,268.5)"><g transform="translate(4,17)"><rect x="-72" y="-78" width="40" height="96" rx="20" fill="#9AA7B4"/><rect x="32" y="-136" width="40" height="154" rx="20" fill="#4E96C8"/><rect x="136" y="-202" width="40" height="220" rx="20" fill="#2B7FC0"/><path d="M110,-230 L156,-286 L202,-230 Z" fill="#2B7FC0"/><rect x="-146" y="0" width="396" height="26" rx="13" fill="#0E3355"/><rect x="-128" y="26" width="360" height="40" rx="8" fill="#E4EBF1"/><rect x="-104" y="36" width="312" height="5" rx="2.5" fill="#C3CCD5"/><rect x="-104" y="49" width="312" height="5" rx="2.5" fill="#C3CCD5"/><path d="M250,78 H-184 a74,74 0 0 0 -74,74 v10 a74,74 0 0 0 74,74 h186" stroke="#0E3355" stroke-width="34" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></symbol><symbol id="markNeg" viewBox="0 0 542 537"><g transform="translate(271.0,268.5)"><g transform="translate(4,17)"><rect x="-72" y="-78" width="40" height="96" rx="20" fill="#8FA6BC"/><rect x="32" y="-136" width="40" height="154" rx="20" fill="#79B8E4"/><rect x="136" y="-202" width="40" height="220" rx="20" fill="#FFFFFF"/><path d="M110,-230 L156,-286 L202,-230 Z" fill="#FFFFFF"/><rect x="-146" y="0" width="396" height="26" rx="13" fill="#FFFFFF"/><rect x="-128" y="26" width="360" height="40" rx="8" fill="#FFFFFF"/><rect x="-104" y="36" width="312" height="5" rx="2.5" fill="#0E3355"/><rect x="-104" y="49" width="312" height="5" rx="2.5" fill="#0E3355"/><path d="M250,78 H-184 a74,74 0 0 0 -74,74 v10 a74,74 0 0 0 74,74 h186" stroke="#FFFFFF" stroke-width="34" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g></symbol><symbol id="li" viewBox="0 0 24 24"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.44-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.47-.9 1.63-1.85 3.36-1.85 3.59 0 4.26 2.37 4.26 5.45v6.29zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z" fill="currentColor"/></symbol></svg>
@@ -31,8 +31,8 @@
     <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7m0 0-3-3m3 3 3-3M10 18.5h4"/></svg>تثبيت التطبيق</button>
 
   <div class="actions">
-    <button id="btnUpload" class="btn primary" title="رفع ملف PDF">
-      <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M5 20h14"/></svg>رفع PDF</button>
+    <button id="btnUpload" class="btn primary" title="رفع ملف PDF أو صورة">
+      <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M5 20h14"/></svg>رفع ملف</button>
     <button id="btnSign" class="btn" disabled>
       <svg viewBox="0 0 24 24"><path d="M3 17c3-1 4-6 6-6s1 5 3 5 3-3 5-3 2 2 4 2M4 21h16"/></svg>إضافة توقيع</button>
     <button id="btnStamp" class="btn" disabled>
@@ -48,7 +48,7 @@
     <button id="btnNew" class="btn ghost" disabled>
       <svg viewBox="0 0 24 24"><path d="M14 3H6v18h12V7zM14 3v4h4M12 11v6M9 14h6"/></svg>مستند جديد</button>
   </div>
-  <input type="file" id="fileInput" accept="application/pdf,.pdf" hidden>
+  <input type="file" id="fileInput" accept="application/pdf,.pdf,image/*" multiple hidden>
 </header>
 
 <div class="subbar" id="subbar" hidden>
@@ -70,8 +70,8 @@
   <div id="empty" class="empty">
     <div class="drop">
       <svg viewBox="0 0 24 24"><path d="M14 3H6v18h12V7zM14 3v4h4M12 17v-6m0 0-3 3m3-3 3 3"/></svg>
-      <h2>ارفع مستند PDF للبدء</h2>
-      <p>اضغط على «رفع PDF» أو اسحب الملف وأفلته هنا</p>
+      <h2>ارفع مستند PDF أو صورة للبدء</h2>
+      <p>اضغط على «رفع ملف» أو اسحب الملف وأفلته هنا.<br>يمكنك اختيار عدة صور لتصبح صفحات في مستند واحد.</p>
       <button class="btn primary" id="btnUpload2">اختيار ملف</button>
       <small>يعمل الموقع على جهازك فقط — لا يُرفع أي ملف إلى الإنترنت</small>
     </div>
@@ -181,6 +181,6 @@
 <script src="lib/pdf.min.js"></script>
 <script src="lib/pdf.worker.min.js"></script>
 <script src="lib/pdf-lib.min.js"></script>
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

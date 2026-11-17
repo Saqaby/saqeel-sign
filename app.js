@@ -90,29 +90,39 @@
   /* ------------------------------------------------------------------ */
   /* تحميل المستند                                                       */
   /* ------------------------------------------------------------------ */
-  async function openFile(file) {
-    if (!file) return;
-    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-    if (!isPdf) return toast('الرجاء اختيار ملف بصيغة PDF', true);
+  const isPdfFile = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+  const isImageFile = (f) => /^image\//.test(f.type) || /\.(png|jpe?g|webp|gif|bmp|heic|heif)$/i.test(f.name);
+
+  // يقبل ملف PDF، أو صورة أو أكثر تتحول كل منها إلى صفحة في مستند PDF
+  async function openFile(list) {
+    const files = [...(list || [])];
+    if (!files.length) return;
+    const pdfFile = files.find(isPdfFile);
+    const images = pdfFile ? [] : files.filter(isImageFile);
+    if (!pdfFile && !images.length) {
+      fileInput.value = '';
+      return toast('الرجاء اختيار ملف PDF أو صورة (JPG أو PNG)', true);
+    }
     if (state.pdf && state.items.length &&
         !(await ask('سيتم إغلاق المستند الحالي وحذف التوقيع والختم منه. متابعة؟', 'فتح المستند الجديد'))) {
       fileInput.value = '';
       return;
     }
 
-    busy(true, 'جارٍ فتح المستند…');
+    busy(true, images.length ? 'جارٍ تحويل الصور إلى PDF…' : 'جارٍ فتح المستند…');
     let opened = false;
     try {
-      const bytes = new Uint8Array(await file.arrayBuffer());
+      const bytes = pdfFile ? new Uint8Array(await pdfFile.arrayBuffer()) : await imagesToPdf(images);
+      const name = pdfFile ? pdfFile.name : images[0].name.replace(/\.[^.]+$/, '') + '.pdf';
       // نسخة لـ PDF.js لأن البايتات قد تُنقل/تُستهلك
       const pdf = await pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
       resetDocument();
       state.pdf = pdf;
       state.bytes = bytes;
-      state.fileName = file.name;
+      state.fileName = name;
       await buildPages();
-      $('docName').textContent = file.name;
-      $('docName').title = file.name;
+      $('docName').textContent = name;
+      $('docName').title = name;
       $('pageCount').textContent = pdf.numPages;
       $('pageInput').max = pdf.numPages;
       $('subbar').hidden = false;
@@ -125,7 +135,9 @@
       console.error(e);
       toast(e && e.name === 'PasswordException'
         ? 'هذا المستند محمي بكلمة مرور ولا يمكن فتحه'
-        : 'تعذّر فتح الملف. تأكد أنه ملف PDF سليم.', true);
+        : images.length
+          ? 'تعذّر قراءة الصورة. جرّب صورة بصيغة JPG أو PNG.'
+          : 'تعذّر فتح الملف. تأكد أنه ملف PDF سليم.', true);
     } finally {
       busy(false);
       fileInput.value = '';
@@ -138,6 +150,29 @@
     } else if (await ask('تم فتح المستند. هل تريد رفع صورة الختم الآن؟', 'رفع الختم', 'لاحقًا')) {
       addStamp();
     }
+  }
+
+  // كل صورة صفحة بعرض A4 (أو A4 بالعرض للصور الأفقية) مع الحفاظ على نسبتها
+  async function imagesToPdf(images) {
+    const doc = await PDFDocument.create();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const MAX = 3000;
+    for (const f of images) {
+      const im = await loadImage(f);
+      const s = Math.min(1, MAX / Math.max(im.naturalWidth, im.naturalHeight));
+      canvas.width = Math.round(im.naturalWidth * s);
+      canvas.height = Math.round(im.naturalHeight * s);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(im, 0, 0, canvas.width, canvas.height);
+      const jpg = await doc.embedJpg(dataUrlToBytes(canvas.toDataURL('image/jpeg', 0.92)));
+      const w = canvas.width >= canvas.height ? 842 : 595;
+      const h = w * canvas.height / canvas.width;
+      doc.addPage([w, h]).drawImage(jpg, { x: 0, y: 0, width: w, height: h });
+    }
+    canvas.width = canvas.height = 0;
+    return doc.save();
   }
 
   function resetDocument() {
@@ -921,7 +956,7 @@
   /* الأحداث                                                             */
   /* ------------------------------------------------------------------ */
   $('btnUpload').onclick = $('btnUpload2').onclick = () => fileInput.click();
-  fileInput.onchange = () => openFile(fileInput.files[0]);
+  fileInput.onchange = () => openFile(fileInput.files);
   $('btnSign').onclick = () => chooseOrNew('sig');
   $('btnStamp').onclick = () => chooseOrNew('stamp');
   $('btnUndo').onclick = undo;
@@ -967,8 +1002,7 @@
   viewer.addEventListener('drop', (e) => {
     e.preventDefault();
     viewer.classList.remove('dragover');
-    const f = e.dataTransfer.files && e.dataTransfer.files[0];
-    if (f) openFile(f);
+    if (e.dataTransfer.files && e.dataTransfer.files.length) openFile(e.dataTransfer.files);
   });
 
   document.addEventListener('keydown', (e) => {
