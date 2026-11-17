@@ -110,7 +110,6 @@
     }
 
     busy(true, images.length ? 'جارٍ تحويل الصور إلى PDF…' : 'جارٍ فتح المستند…');
-    let opened = false;
     try {
       const bytes = pdfFile ? new Uint8Array(await pdfFile.arrayBuffer()) : await imagesToPdf(images);
       const name = pdfFile ? pdfFile.name : images[0].name.replace(/\.[^.]+$/, '') + '.pdf';
@@ -130,7 +129,6 @@
       fitWidth();
       viewer.scrollTop = 0;
       updateButtons();
-      opened = true;
     } catch (e) {
       console.error(e);
       toast(e && e.name === 'PasswordException'
@@ -141,14 +139,6 @@
     } finally {
       busy(false);
       fileInput.value = '';
-    }
-    // بعد فتح المستند: عرض خيار الختم مباشرة (من المحفوظ إن وُجد)
-    if (!opened) return;
-    const stamps = await library.list('stamp');
-    if (stamps.length) {
-      if (await ask('تم فتح المستند. هل تريد إضافة الختم الآن؟', 'اختيار الختم', 'لاحقًا')) openPicker('stamp', stamps);
-    } else if (await ask('تم فتح المستند. هل تريد رفع صورة الختم الآن؟', 'رفع الختم', 'لاحقًا')) {
-      addStamp();
     }
   }
 
