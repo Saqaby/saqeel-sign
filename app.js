@@ -80,6 +80,7 @@
   function updateButtons() {
     const has = !!state.pdf;
     $('btnSign').disabled = !has;
+    $('btnSignUpload').disabled = !has;
     $('btnStamp').disabled = !has;
     $('btnDownload').disabled = !has;
     $('btnNew').disabled = !has;
@@ -92,16 +93,22 @@
   /* ------------------------------------------------------------------ */
   const isPdfFile = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
   const isImageFile = (f) => /^image\//.test(f.type) || /\.(png|jpe?g|webp|gif|bmp|heic|heif)$/i.test(f.name);
+  const isWordFile = (f) => /\.docx$/i.test(f.name) ||
+    f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
   // يقبل ملف PDF، أو صورة أو أكثر تتحول كل منها إلى صفحة في مستند PDF
   async function openFile(list) {
     const files = [...(list || [])];
     if (!files.length) return;
     const pdfFile = files.find(isPdfFile);
-    const images = pdfFile ? [] : files.filter(isImageFile);
-    if (!pdfFile && !images.length) {
+    const wordFile = pdfFile ? null : files.find(isWordFile);
+    const images = pdfFile || wordFile ? [] : files.filter(isImageFile);
+    if (!pdfFile && !wordFile && !images.length) {
       fileInput.value = '';
-      return toast('الرجاء اختيار ملف PDF أو صورة (JPG أو PNG)', true);
+      if (files.some((f) => /\.doc$/i.test(f.name))) {
+        return toast('صيغة .doc القديمة غير مدعومة. احفظ الملف من وورد بصيغة .docx أو PDF ثم ارفعه.', true);
+      }
+      return toast('الرجاء اختيار ملف PDF أو وورد (docx) أو صورة', true);
     }
     if (state.pdf && state.items.length &&
         !(await ask('سيتم إغلاق المستند الحالي وحذف التوقيع والختم منه. متابعة؟', 'فتح المستند الجديد'))) {
@@ -109,10 +116,12 @@
       return;
     }
 
-    busy(true, images.length ? 'جارٍ تحويل الصور إلى PDF…' : 'جارٍ فتح المستند…');
+    busy(true, wordFile ? 'جارٍ تحويل ملف وورد…' : images.length ? 'جارٍ تحويل الصور إلى PDF…' : 'جارٍ فتح المستند…');
     try {
-      const bytes = pdfFile ? new Uint8Array(await pdfFile.arrayBuffer()) : await imagesToPdf(images);
-      const name = pdfFile ? pdfFile.name : images[0].name.replace(/\.[^.]+$/, '') + '.pdf';
+      const bytes = pdfFile ? new Uint8Array(await pdfFile.arrayBuffer())
+        : wordFile ? await wordToPdf(wordFile) : await imagesToPdf(images);
+      const source = pdfFile || wordFile || images[0];
+      const name = pdfFile ? pdfFile.name : source.name.replace(/\.[^.]+$/, '') + '.pdf';
       // نسخة لـ PDF.js لأن البايتات قد تُنقل/تُستهلك
       const pdf = await pdfjsLib.getDocument({ data: bytes.slice(), isEvalSupported: false }).promise;
       resetDocument();
@@ -133,12 +142,55 @@
       console.error(e);
       toast(e && e.name === 'PasswordException'
         ? 'هذا المستند محمي بكلمة مرور ولا يمكن فتحه'
-        : images.length
+        : wordFile
+          ? 'تعذّر قراءة ملف وورد. جرّب حفظه بصيغة PDF من وورد ثم رفعه.'
+          : images.length
           ? 'تعذّر قراءة الصورة. جرّب صورة بصيغة JPG أو PNG.'
           : 'تعذّر فتح الملف. تأكد أنه ملف PDF سليم.', true);
     } finally {
       busy(false);
       fileInput.value = '';
+    }
+  }
+
+  const loadScript = (src) => new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src; el.onload = resolve; el.onerror = reject;
+    document.head.appendChild(el);
+  });
+
+  // يعرض ملف وورد بصفحاته كما حفظها وورد، ثم يصوّر كل صفحة في صفحة PDF
+  async function wordToPdf(file) {
+    if (!window.JSZip) await loadScript('lib/jszip.min.js');
+    if (!window.docx) await loadScript('lib/docx-preview.min.js');
+    if (!window.html2canvas) await loadScript('lib/html2canvas.min.js');
+    const holder = document.createElement('div');
+    holder.style.cssText = 'position:absolute;left:-30000px;top:0;background:#fff;direction:ltr';
+    document.body.appendChild(holder);
+    try {
+      await window.docx.renderAsync(await file.arrayBuffer(), holder, null, {
+        inWrapper: false, breakPages: true, ignoreLastRenderedPageBreak: false,
+        useBase64URL: true, experimental: true, renderHeaders: true, renderFooters: true,
+      });
+      await document.fonts.ready;
+      await Promise.all([...holder.querySelectorAll('img')].map((im) =>
+        im.complete ? null : new Promise((r) => { im.onload = im.onerror = r; })));
+      const sections = [...holder.querySelectorAll('section.docx')];
+      if (!sections.length) throw new Error('empty document');
+      const doc = await PDFDocument.create();
+      for (let i = 0; i < sections.length; i++) {
+        busy(true, `جارٍ تحويل ملف وورد… (${i + 1}/${sections.length})`);
+        const sec = sections[i];
+        const canvas = await window.html2canvas(sec, { scale: 2, backgroundColor: '#ffffff', logging: false });
+        const jpg = await doc.embedJpg(dataUrlToBytes(canvas.toDataURL('image/jpeg', 0.92)));
+        // px → pt
+        const w = sec.offsetWidth * 0.75, h = sec.offsetHeight * 0.75;
+        doc.addPage([w, h]).drawImage(jpg, { x: 0, y: 0, width: w, height: h });
+        canvas.width = canvas.height = 0;
+      }
+      return doc.save();
+    } finally {
+      holder.remove();
     }
   }
 
@@ -660,6 +712,32 @@
     if (stamp) offerSave('stamp', stamp.src, stamp.ratio, 115);
   };
 
+  // صورة توقيع جاهزة (ممسوحة أو مصوّرة): تُعالج مثل الختم ثم تُضاف كتوقيع
+  const sigInput = document.createElement('input');
+  sigInput.type = 'file';
+  sigInput.accept = 'image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp';
+  sigInput.hidden = true;
+  document.body.appendChild(sigInput);
+  $('btnSignUpload').onclick = () => { sigInput.value = ''; sigInput.click(); };
+  sigInput.onchange = async () => {
+    const file = sigInput.files[0];
+    sigInput.value = '';
+    if (!file) return;
+    if (!isImageFile(file)) return toast('الرجاء اختيار صورة التوقيع بصيغة PNG أو JPG', true);
+    busy(true, 'جارٍ تجهيز التوقيع…');
+    let sig = null;
+    try {
+      sig = await prepareStamp(file);
+      addItem('sig', sig.src, sig.ratio, 150);
+    } catch (e) {
+      console.error(e);
+      toast('تعذّر قراءة صورة التوقيع. جرّب صورة أخرى بصيغة PNG أو JPG.', true);
+    } finally {
+      busy(false);
+    }
+    if (sig) offerSave('sig', sig.src, sig.ratio, 150);
+  };
+
   function loadImage(file) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
@@ -690,18 +768,27 @@
     const hasAlpha = transparent > (w * h) * 0.01;
 
     if (!hasAlpha) {
-      // إزالة الأبيض مع الحفاظ على نعومة الحواف ولون الحبر الأصلي
-      const LO = 200, HI = 245; // ما فوق HI يصبح شفافًا تمامًا
+      // لون الورق = وسيط بكسلات الحواف، فتُزال الخلفية حتى لو كانت رمادية أو مصفرّة (صورة بالجوال)
+      const edge = [[], [], []];
+      const sample = (x, y) => { const i = (y * w + x) * 4; edge[0].push(d[i]); edge[1].push(d[i + 1]); edge[2].push(d[i + 2]); };
+      const step = Math.max(1, Math.floor(Math.max(w, h) / 200));
+      for (let x = 0; x < w; x += step) { sample(x, 0); sample(x, h - 1); }
+      for (let y = 0; y < h; y += step) { sample(0, y); sample(w - 1, y); }
+      const median = (a) => a.sort((p, q) => p - q)[a.length >> 1];
+      let bg = edge.map(median);
+      if (Math.min(...bg) < 120) bg = [255, 255, 255];
+      const bgm = Math.min(...bg);
+      const HI = bgm - 14, LO = HI - 55; // ما فوق HI يصبح شفافًا تمامًا
       for (let i = 0; i < d.length; i += 4) {
         const r = d[i], g = d[i + 1], b = d[i + 2];
         const m = Math.min(r, g, b);
-        // كلما زاد بياض البكسل قلّ تعتيمه
-        const a = m >= HI ? 0 : Math.min(1, (255 - m) / (255 - LO));
+        // كلما اقترب البكسل من لون الورق قلّ تعتيمه
+        const a = m >= HI ? 0 : Math.min(1, (HI - m) / (HI - LO));
         if (a <= 0) { d[i + 3] = 0; continue; }
-        // فصل اللون عن الخلفية البيضاء
-        d[i] = clamp(Math.round(255 - (255 - r) / a), 0, 255);
-        d[i + 1] = clamp(Math.round(255 - (255 - g) / a), 0, 255);
-        d[i + 2] = clamp(Math.round(255 - (255 - b) / a), 0, 255);
+        // فصل لون الحبر عن لون الورق
+        d[i] = clamp(Math.round(bg[0] - (bg[0] - r) / a), 0, 255);
+        d[i + 1] = clamp(Math.round(bg[1] - (bg[1] - g) / a), 0, 255);
+        d[i + 2] = clamp(Math.round(bg[2] - (bg[2] - b) / a), 0, 255);
         d[i + 3] = Math.round(a * 255);
       }
       ctx.putImageData(img, 0, 0);
