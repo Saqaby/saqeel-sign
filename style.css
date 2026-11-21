@@ -216,15 +216,5 @@ button:disabled{cursor:not-allowed;opacity:.45}
 .save-body .lib-note{margin:0}
 @media (max-width:640px){ .lib-list{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px;gap:10px} .modal-foot .btn{flex-direction:row;font-size:13px} }
 
-/* رفع صورة توقيع: أيقونة صغيرة داخل زر التوقيع */
-.sign-wrap{position:relative;display:inline-flex;flex:none}
-.sign-wrap #btnSign{padding-inline-end:30px}
-.sig-up{position:absolute;top:50%;inset-inline-end:6px;transform:translateY(-50%);width:22px;height:22px;padding:0;border-radius:50%;
-  border:1px solid var(--navy-2);background:var(--panel);color:var(--navy-2);display:grid;place-items:center}
-.sig-up svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.sig-up:not(:disabled):hover{background:var(--navy-2);color:var(--on-accent)}
-.sig-up:disabled{opacity:.45}
-@media (max-width:640px){
-  .sign-wrap #btnSign{padding-inline-end:8px}
-  .sig-up{top:4px;inset-inline-end:4px;transform:none;width:20px;height:20px}
-}
+/* رفع صورة توقيع من داخل نافذتي التوقيع */
+.modal-foot .sig-upload{margin-inline-end:auto}

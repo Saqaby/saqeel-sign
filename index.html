@@ -12,7 +12,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="تعديل المستندات">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="lib/fonts/tajawal.css?v=9">
+<link rel="stylesheet" href="lib/fonts/tajawal.css?v=10">
 <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
@@ -31,13 +31,10 @@
     <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7m0 0-3-3m3 3 3-3M10 18.5h4"/></svg>تثبيت التطبيق</button>
 
   <div class="actions">
-    <button id="btnUpload" class="btn primary" title="رفع ملف PDF أو وورد أو صورة">
+    <button id="btnUpload" class="btn primary" title="رفع ملف PDF أو صورة">
       <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M5 20h14"/></svg>رفع ملف</button>
-    <span class="sign-wrap">
-      <button id="btnSign" class="btn" disabled>
-        <svg viewBox="0 0 24 24"><path d="M3 17c3-1 4-6 6-6s1 5 3 5 3-3 5-3 2 2 4 2M4 21h16"/></svg>إضافة توقيع</button>
-      <button id="btnSignUpload" class="sig-up" disabled title="رفع صورة توقيع جاهزة" aria-label="رفع صورة توقيع جاهزة"><svg viewBox="0 0 24 24"><path d="M12 16V6m0 0-4 4m4-4 4 4M6 20h12"/></svg></button>
-    </span>
+    <button id="btnSign" class="btn" disabled>
+      <svg viewBox="0 0 24 24"><path d="M3 17c3-1 4-6 6-6s1 5 3 5 3-3 5-3 2 2 4 2M4 21h16"/></svg>إضافة توقيع</button>
     <button id="btnStamp" class="btn" disabled>
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></svg>إضافة الختم</button>
     <span class="sep"></span>
@@ -51,7 +48,7 @@
     <button id="btnNew" class="btn ghost" disabled>
       <svg viewBox="0 0 24 24"><path d="M14 3H6v18h12V7zM14 3v4h4M12 11v6M9 14h6"/></svg>مستند جديد</button>
   </div>
-  <input type="file" id="fileInput" accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*" multiple hidden>
+  <input type="file" id="fileInput" accept="application/pdf,.pdf,image/*" multiple hidden>
 </header>
 
 <div class="subbar" id="subbar" hidden>
@@ -73,7 +70,7 @@
   <div id="empty" class="empty">
     <div class="drop">
       <svg viewBox="0 0 24 24"><path d="M14 3H6v18h12V7zM14 3v4h4M12 17v-6m0 0-3 3m3-3 3 3"/></svg>
-      <h2>ارفع مستند PDF أو وورد أو صورة للبدء</h2>
+      <h2>ارفع مستند PDF أو صورة للبدء</h2>
       <p>اضغط على «رفع ملف» أو اسحب الملف وأفلته هنا.<br>يمكنك اختيار عدة صور لتصبح صفحات في مستند واحد.</p>
       <button class="btn primary" id="btnUpload2">اختيار ملف</button>
       <small>يعمل الموقع على جهازك فقط — لا يُرفع أي ملف إلى الإنترنت</small>
@@ -111,6 +108,7 @@
     </div>
     <div class="modal-foot">
       <button class="btn ghost" id="sigClear">مسح التوقيع</button>
+      <button class="btn ghost sig-upload" id="sigUpload" title="رفع صورة توقيعك الممسوحة أو المصوّرة"><svg viewBox="0 0 24 24"><path d="M12 16V6m0 0-4 4m4-4 4 4M6 20h12"/></svg>رفع صورة توقيع</button>
       <button class="btn primary" id="sigApply" disabled>اعتماد التوقيع</button>
     </div>
   </div>
@@ -127,6 +125,7 @@
     <p class="lib-note">محفوظة في هذا المتصفح على جهازك فقط، ولا تُرسل إلى أي مكان.</p>
     <div class="modal-foot">
       <button class="btn primary" id="libNew"></button>
+      <button class="btn ghost sig-upload" id="libUpload" hidden><svg viewBox="0 0 24 24"><path d="M12 16V6m0 0-4 4m4-4 4 4M6 20h12"/></svg>رفع صورة توقيع</button>
     </div>
   </div>
 </div>
