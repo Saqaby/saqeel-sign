@@ -398,16 +398,52 @@
         h.dataset.corner = c;
         el.appendChild(h);
       }
+      // شريط صغير فوق العنصر المحدد: ألوان التوقيع + حذف
+      const bar = document.createElement('div');
+      bar.className = 'item-bar';
+      bar.addEventListener('pointerdown', (e) => e.stopPropagation());
+      if (it.type === 'sig') {
+        for (const [color, label] of INK_COLORS) {
+          const sw = document.createElement('button');
+          sw.className = 'ink' + (it.color === color ? ' on' : '');
+          sw.style.setProperty('--c', color);
+          sw.title = 'لون التوقيع: ' + label;
+          sw.addEventListener('click', (e) => { e.stopPropagation(); recolorItem(it.id, color); });
+          bar.appendChild(sw);
+        }
+      }
       const x = document.createElement('button');
       x.className = 'x';
       x.textContent = 'حذف';
-      x.addEventListener('pointerdown', (e) => e.stopPropagation());
       x.addEventListener('click', (e) => { e.stopPropagation(); deleteItem(it.id); });
-      el.appendChild(x);
+      bar.appendChild(x);
+      el.appendChild(bar);
       positionEl(el, it);
       el.addEventListener('pointerdown', (e) => startInteraction(e, it, el));
       p.overlay.appendChild(el);
     }
+  }
+
+  const INK_COLORS = [['#0b1f5c', 'أزرق داكن'], ['#111111', 'أسود'], ['#1d4ed8', 'أزرق']];
+
+  // يعيد تلوين التوقيع بلون واحد مع الحفاظ على شفافية حوافه
+  async function recolorItem(id, color) {
+    const it = state.items.find((i) => i.id === id);
+    if (!it || it.color === color) return;
+    const im = new Image();
+    im.src = it.src;
+    await im.decode();
+    const c = document.createElement('canvas');
+    c.width = im.naturalWidth; c.height = im.naturalHeight;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(im, 0, 0);
+    ctx.globalCompositeOperation = 'source-in';
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, c.width, c.height);
+    pushHistory();
+    it.src = c.toDataURL('image/png');
+    it.color = color;
+    renderItems();
   }
 
   function positionEl(el, it) {
