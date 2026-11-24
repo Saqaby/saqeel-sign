@@ -454,6 +454,72 @@
     el.style.height = it.h * z + 'px';
   }
 
+  /* ------------------------------------------------------------------ */
+  /* خطوط المحاذاة الذكية                                                */
+  /* ------------------------------------------------------------------ */
+  // أسطر نص الصفحة (بداية السطر ونهايته وخط القاعدة) تُقرأ مرة واحدة عند أول سحب
+  function loadTextLines(p) {
+    if (p.textLines !== undefined) return;
+    p.textLines = [];
+    p.page.getTextContent().then((tc) => {
+      const lines = [];
+      for (const t of tc.items) {
+        if (!t.str || !t.str.trim()) continue;
+        const [, b, c, , e, f] = t.transform;
+        if (Math.abs(b) > 0.01 || Math.abs(c) > 0.01) continue;
+        const p0 = p.vp.convertToViewportPoint(e, f), p1 = p.vp.convertToViewportPoint(e + t.width, f);
+        if (Math.abs(p0[1] - p1[1]) > 1) continue;
+        const x0 = Math.min(p0[0], p1[0]), x1 = Math.max(p0[0], p1[0]), y = p0[1];
+        const line = lines.find((l) => Math.abs(l.y - y) < 2);
+        if (line) { line.x0 = Math.min(line.x0, x0); line.x1 = Math.max(line.x1, x1); }
+        else lines.push({ y, x0, x1 });
+      }
+      p.textLines = lines;
+    }).catch(() => {});
+  }
+
+  function guideTargets(pi, selfId) {
+    const p = state.pages[pi];
+    const xs = [p.vp.width / 2], ys = [p.vp.height / 2];
+    for (const o of state.items) {
+      if (o.page !== pi || o.id === selfId) continue;
+      xs.push(o.x, o.x + o.w / 2, o.x + o.w);
+      ys.push(o.y, o.y + o.h / 2, o.y + o.h);
+    }
+    for (const l of p.textLines || []) { xs.push(l.x0, l.x1); ys.push(l.y); }
+    return { xs, ys };
+  }
+
+  // أقرب محاذاة لبداية العنصر أو منتصفه أو نهايته ضمن مسافة الجذب
+  function snapAxis(pos, size, targets, tol) {
+    let best = null;
+    for (const v of targets) {
+      for (const off of [0, size / 2, size]) {
+        const d = v - (pos + off);
+        if (Math.abs(d) <= tol && (!best || Math.abs(d) < Math.abs(best.d))) best = { d, v };
+      }
+    }
+    return best;
+  }
+
+  function showGuides(p, vx, hy) {
+    for (const g of pagesEl.querySelectorAll('.guide')) g.remove();
+    if (!p) return;
+    const z = state.zoom;
+    if (vx != null) {
+      const g = document.createElement('div');
+      g.className = 'guide v';
+      g.style.left = vx * z + 'px';
+      p.overlay.appendChild(g);
+    }
+    if (hy != null) {
+      const g = document.createElement('div');
+      g.className = 'guide h';
+      g.style.top = hy * z + 'px';
+      p.overlay.appendChild(g);
+    }
+  }
+
   // سحب / تغيير الحجم
   function startInteraction(e, it, el) {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
@@ -467,6 +533,7 @@
     const ratio = it.w / it.h;
     let moved = false;
     el.setPointerCapture(e.pointerId);
+    loadTextLines(state.pages[it.page]);
 
     // الركن الثابت عند تغيير الحجم
     const anchor = corner && {
@@ -512,6 +579,17 @@
         const pr = p.el.getBoundingClientRect();
         it.x = clamp((left - pr.left) / z, 0, p.vp.width - it.w);
         it.y = clamp((top - pr.top) / z, 0, p.vp.height - it.h);
+        // الجذب إلى خطوط المحاذاة (يُعطَّل بالضغط على Alt أثناء السحب)
+        let gx = null, gy = null;
+        if (!ev.altKey) {
+          loadTextLines(p);
+          const { xs, ys } = guideTargets(target, it.id);
+          const tol = 6 / z;
+          const sx = snapAxis(it.x, it.w, xs, tol), sy = snapAxis(it.y, it.h, ys, tol);
+          if (sx) { it.x = clamp(it.x + sx.d, 0, p.vp.width - it.w); gx = sx.v; }
+          if (sy) { it.y = clamp(it.y + sy.d, 0, p.vp.height - it.h); gy = sy.v; }
+        }
+        showGuides(p, gx, gy);
         if (target !== it.page) {
           it.page = target;
           p.overlay.appendChild(el);
@@ -521,6 +599,7 @@
       }
     };
     const onUp = () => {
+      showGuides(null);
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onUp);

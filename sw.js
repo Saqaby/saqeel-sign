@@ -1,7 +1,7 @@
 // Network first so updates show at once; the cache only serves when offline.
-const CACHE = 'sign-v11';
+const CACHE = 'sign-v12';
 const SHELL = [
-  './', 'style.css?v=11', 'app.js?v=8', 'lib/fonts/tajawal.css?v=8',
+  './', 'style.css?v=12', 'app.js?v=8', 'lib/fonts/tajawal.css?v=8',
   'lib/pdf.min.js', 'lib/pdf.worker.min.js', 'lib/pdf-lib.min.js',
   'lib/fonts/tajawal-400-arabic.woff2', 'lib/fonts/tajawal-400-latin.woff2',
   'lib/fonts/tajawal-500-arabic.woff2', 'lib/fonts/tajawal-500-latin.woff2',
